@@ -34,21 +34,96 @@
       - `DEFAULT_TIMEOUT_MS=45000`
       - `ALLOW_EXE=hdc.exe,powershell.exe,cmd.exe`
 
-## 3. Claude Desktop（Windows）接入
+## 3. 在各 MCP 客户端中添加此 Server
 
-Claude Desktop 本身在 Windows 上；它需要配置“外部 MCP server”执行命令时：
+### 3.1 Claude Desktop（Windows）
 
-1. 在 Claude Desktop 中添加新 server（或编辑现有 server）。
-2. 设置执行命令：
+Claude Desktop 在 Windows 上运行，通过配置文件 `claude_desktop_config.json` 启动 WSL 内的 stdio MCP server。
 
-    ```
+1. 在 Windows 打开（或新建）：
+
+   `C:\Users\<你的用户名>\AppData\Roaming\Claude\claude_desktop_config.json`
+
+2. 在 `mcpServers` 下添加一段（示例）：
+
+   ```json
+   {
+     "mcpServers": {
+       "wsl-win-hdc": {
+         "command": "wsl.exe",
+         "args": [
+           "-d",
+           "Ubuntu",
+           "--",
+           "node",
+           "/home/<user>/hdc-mcp/server.js"
+         ],
+         "env": {
+           "HDC_EXE": "C:\\Tools\\hdc\\hdc.exe",
+           "WIN_PS_EXE": "powershell.exe",
+           "DEFAULT_TIMEOUT_MS": "30000",
+           "ALLOW_EXE": "hdc.exe,powershell.exe,cmd.exe"
+         }
+       }
+     }
+   }
+   ```
+
+3. 保存后重启 Claude Desktop，在工具/MCP 面板中启用 `wsl-win-hdc`。
+
+### 3.2 Claude Code（VS Code 插件）
+
+1. 在 VS Code 中按 `Ctrl+Shift+P` → “Preferences: Open Settings (JSON)”。
+2. 在 `settings.json` 添加（或合并）：
+
+   ```json
+   {
+     "claude.mcpServers": {
+       "wsl-win-hdc": {
+         "command": "wsl.exe",
+         "args": [
+           "-d",
+           "Ubuntu",
+           "--",
+           "node",
+           "/home/<user>/hdc-mcp/server.js"
+         ],
+         "env": {
+           "HDC_EXE": "C:\\Tools\\hdc\\hdc.exe",
+           "WIN_PS_EXE": "powershell.exe",
+           "DEFAULT_TIMEOUT_MS": "30000",
+           "ALLOW_EXE": "hdc.exe,powershell.exe,cmd.exe"
+         }
+       }
+     }
+   }
+   ```
+
+3. 重启 VS Code 或重新加载窗口，在 Claude Code 中启用 `wsl-win-hdc`。
+
+### 3.3 Codex / 其他 MCP 客户端
+
+不同 MCP 客户端的配置格式不完全相同，但核心字段都是类似的 `command` / `args` / `env`。可以参考如下伪配置：
+
+```yaml
+mcpServers:
+  wsl-win-hdc:
+    type: stdio
     command: wsl.exe
-    args: ["-d", "<你的发行版>", "--", "node", "/home/<user>/hdc/server.js"]
-    ```
+    args:
+      - -d
+      - Ubuntu
+      - --
+      - node
+      - /home/<user>/hdc-mcp/server.js
+    env:
+      HDC_EXE: C:\Tools\hdc\hdc.exe
+      WIN_PS_EXE: powershell.exe
+      DEFAULT_TIMEOUT_MS: "30000"
+      ALLOW_EXE: hdc.exe,powershell.exe,cmd.exe
+```
 
-3. 客户端会通过 stdio 用 MCP 协议呼叫 server，server 再通过 `powershell.exe` 调用 Windows 程序。
-
-提示：如果希望 Claude Desktop 给 server 传环境变量，可直接在 args 前加入 `env` 变量或在 Windows 上用 `cmd /C "set MY_VAR=... && wsl ..."`。
+在 Codex 的配置文件中，将上述 `command` / `args` / `env` 对应填入即可。
 
 ## 4. 工具使用示例（通过 MCP Client 模拟/推理）
 
