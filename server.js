@@ -58,7 +58,10 @@ function encodePowerShellScript(script) {
 
 function normalizeAllowed(exe) {
     const lower = exe.toLowerCase();
-    const base = path.basename(lower);
+    // On Linux (WSL), `path.basename()` won't treat `\` as a separator. Use win32 too.
+    const basePosix = path.basename(lower);
+    const baseWin32 = path.win32.basename(lower);
+    const base = basePosix.length <= baseWin32.length ? basePosix : baseWin32;
     return { lower, base };
 }
 

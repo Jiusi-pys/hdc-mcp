@@ -3,7 +3,7 @@
 ## 1. 前提条件
 
 - **宿主机**：Windows 10/11，已启用 WSL2 并安装 Ubuntu（或其它 Linux 发行版）。
-- **工具链**：在 Ubuntu 中能访问 `powershell.exe`（默认可用）、`wslpath`、`node`、`npm`。
+- **工具链**：在 Ubuntu 中能访问 `powershell.exe`（默认可用）、`wslpath`、`node`（建议 **>= 18**）、`npm`。
 - **hdc.exe**：位于 Windows 端，例如 `C:\Tools\hdc\hdc.exe`，且可通过 WSL 中 `hdc.exe` 命令调用。
 - **Claude Desktop 客户端**：运行在 Windows（不是 WSL），会通过指定的 `command`/`args` 启动 WSL 中的 MCP server。
 
@@ -204,6 +204,13 @@ mcpServers:
 
 - **服务无响应**：确认 WSL 内 `node server.js` 没报错，stdout/ stderr 显示正在等待连接。
 - **Claude Desktop 连接失败**：检查 `command`/`args` 路径是否正确，WSL 是否允许 `node` 执行。
+- **Claude Code `claude mcp list` 显示 `failed`**：
+  - 在列表里按回车进入详情，或运行 `claude --debug mcp list` 查看更详细日志。
+  - 检查 `node -v` 是否 **>= 18**（`@modelcontextprotocol/sdk` 需要 Node >= 18）。
+  - 确认配置里的命令能在“当前运行 Claude 的环境”直接执行：
+    - 如果 `claude` 在 **WSL** 里运行：用 `-- node /home/<user>/.../server.js`（不要用 `wsl.exe ...`）。
+    - 如果 `claude` 在 **Windows** 里运行：用 `-- wsl.exe -d Ubuntu -- node /home/<user>/.../server.js`。
+  - 查看日志目录（Claude 会在 `mcp list` 输出里提示路径）并贴出错误段落。
 - **hdc shell 报 `wc` 找不到**：确保 `command` 内已经把 `| wc -l` 传进 `hdc shell` 字符串，或加 `busybox` 前缀（`useBusybox`）。
 
 ## 7. 建议的下步
