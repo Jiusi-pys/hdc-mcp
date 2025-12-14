@@ -73,6 +73,62 @@ Claude Desktop 在 Windows 上运行，通过配置文件 `claude_desktop_config
 
 ### 3.2 Claude Code（VS Code 插件）
 
+#### 方式 A：使用 Claude Code CLI 添加（推荐）
+
+Claude Code 支持用命令行直接添加 MCP server。官方语法（stdio）形如：
+
+```bash
+claude mcp add --transport stdio <name> [--env KEY=value ...] -- <command> [args...]
+```
+
+其中：
+- `--transport stdio`：表示这是一个本地 stdio server（Claude 会启动一个子进程，用 stdin/stdout 跟它说 MCP 协议）。
+- `<name>`：你给这个 server 起的名字（例如 `wsl-win-hdc`）。
+- `--env KEY=value`：可重复多次，为 server 进程注入环境变量。
+- 第一个 `--`：分隔 Claude 的参数和“要启动的 server 命令”。
+
+**如果你的 Claude Code 运行在 Windows（推荐此项目场景）**，让它用 `wsl.exe` 去启动 WSL 内的 `node server.js`：
+
+```bash
+claude mcp add --transport stdio wsl-win-hdc \
+  --env 'HDC_EXE=C:\Tools\hdc\hdc.exe' \
+  --env 'WIN_PS_EXE=powershell.exe' \
+  --env 'DEFAULT_TIMEOUT_MS=30000' \
+  --env 'ALLOW_EXE=hdc.exe,powershell.exe,cmd.exe' \
+  -- wsl.exe -d Ubuntu -- node /home/<user>/hdc-mcp/server.js
+```
+
+说明：
+- 这里出现了 **两个** `--`：
+  - 第一个 `--`：给 `claude mcp add` 用的；
+  - 第二个 `--`：给 `wsl.exe` 用的（表示后面的参数是“在 WSL 内要执行的命令”）。
+- `/home/<user>/hdc-mcp/server.js` 是 WSL 路径，按你实际路径替换。
+
+**如果你的 Claude Code 本身就运行在 WSL**（例如你在 WSL 里执行 `claude`），那么可以直接启动：
+
+```bash
+claude mcp add --transport stdio wsl-win-hdc \
+  --env 'HDC_EXE=C:\Tools\hdc\hdc.exe' \
+  --env 'WIN_PS_EXE=powershell.exe' \
+  --env 'DEFAULT_TIMEOUT_MS=30000' \
+  --env 'ALLOW_EXE=hdc.exe,powershell.exe,cmd.exe' \
+  -- node /home/<user>/hdc-mcp/server.js
+```
+
+添加后可用下面命令检查：
+
+```bash
+claude mcp list
+```
+
+如果你使用了 project-scoped `.mcp.json`（见 Claude Code 文档），有时需要重置项目授权选择：
+
+```bash
+claude mcp reset-project-choices
+```
+
+#### 方式 B：VS Code `settings.json` 添加（可选）
+
 1. 在 VS Code 中按 `Ctrl+Shift+P` → “Preferences: Open Settings (JSON)”。
 2. 在 `settings.json` 添加（或合并）：
 
