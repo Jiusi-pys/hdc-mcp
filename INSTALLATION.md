@@ -31,6 +31,8 @@
     - 运行时可通过环境变量定制：
       - `WIN_PS_EXE=pwsh.exe`
       - `HDC_EXE=C:\Tools\hdc\hdc.exe`
+      - `HDC_CONNECT_KEY=<connectKey>`（可选：为 `hdc.shell/hdc.run` 提供默认设备）
+      - `RK3588S_CONNECTKEY=<connectKey>`（可选：启用 `rk3588s.*` 快捷工具）
       - `DEFAULT_TIMEOUT_MS=45000`
       - `ALLOW_EXE=hdc.exe,powershell.exe,cmd.exe`
 
@@ -60,6 +62,8 @@ Claude Desktop 在 Windows 上运行，通过配置文件 `claude_desktop_config
          ],
          "env": {
            "HDC_EXE": "C:\\Tools\\hdc\\hdc.exe",
+           "HDC_CONNECT_KEY": "<可选：默认 connectKey>",
+           "RK3588S_CONNECTKEY": "<可选：rk3588s 专用 connectKey>",
            "WIN_PS_EXE": "powershell.exe",
            "DEFAULT_TIMEOUT_MS": "30000",
            "ALLOW_EXE": "hdc.exe,powershell.exe,cmd.exe"
@@ -92,6 +96,8 @@ claude mcp add --transport stdio <name> [--env KEY=value ...] -- <command> [args
 ```bash
 claude mcp add --transport stdio wsl-win-hdc \
   --env 'HDC_EXE=C:\Tools\hdc\hdc.exe' \
+  --env 'HDC_CONNECT_KEY=<可选：默认 connectKey>' \
+  --env 'RK3588S_CONNECTKEY=<可选：rk3588s connectKey>' \
   --env 'WIN_PS_EXE=powershell.exe' \
   --env 'DEFAULT_TIMEOUT_MS=30000' \
   --env 'ALLOW_EXE=hdc.exe,powershell.exe,cmd.exe' \
@@ -109,6 +115,8 @@ claude mcp add --transport stdio wsl-win-hdc \
 ```bash
 claude mcp add --transport stdio wsl-win-hdc \
   --env 'HDC_EXE=C:\Tools\hdc\hdc.exe' \
+  --env 'HDC_CONNECT_KEY=<可选：默认 connectKey>' \
+  --env 'RK3588S_CONNECTKEY=<可选：rk3588s connectKey>' \
   --env 'WIN_PS_EXE=powershell.exe' \
   --env 'DEFAULT_TIMEOUT_MS=30000' \
   --env 'ALLOW_EXE=hdc.exe,powershell.exe,cmd.exe' \
@@ -146,6 +154,8 @@ claude mcp reset-project-choices
          ],
          "env": {
            "HDC_EXE": "C:\\Tools\\hdc\\hdc.exe",
+           "HDC_CONNECT_KEY": "<可选：默认 connectKey>",
+           "RK3588S_CONNECTKEY": "<可选：rk3588s 专用 connectKey>",
            "WIN_PS_EXE": "powershell.exe",
            "DEFAULT_TIMEOUT_MS": "30000",
            "ALLOW_EXE": "hdc.exe,powershell.exe,cmd.exe"
@@ -174,6 +184,8 @@ mcpServers:
       - /home/<user>/hdc-mcp/server.js
     env:
       HDC_EXE: C:\Tools\hdc\hdc.exe
+      HDC_CONNECT_KEY: "<可选：默认 connectKey>"
+      RK3588S_CONNECTKEY: "<可选：rk3588s 专用 connectKey>"
       WIN_PS_EXE: powershell.exe
       DEFAULT_TIMEOUT_MS: "30000"
       ALLOW_EXE: hdc.exe,powershell.exe,cmd.exe
@@ -181,17 +193,33 @@ mcpServers:
 
 在 Codex 的配置文件中，将上述 `command` / `args` / `env` 对应填入即可。
 
+### 3.4 让 Claude 更倾向使用 `hdc`（避免误用本地 `ls/find`）
+
+Claude Code 支持 **Memory files（`CLAUDE.md`）**，会在启动时加载其中的指令与上下文。你可以用它来把“rk3588s 是设备，不是本地目录”这种规则固化下来。
+
+- 本仓库已提供示例：`CLAUDE.md`
+- 你可以按你的实际环境补充：
+  - 默认设备 connectKey（`HDC_CONNECT_KEY` / `RK3588S_CONNECTKEY`）
+  - 常用路径（例如 `/data`、`/system`）
+- 修改/新增 `CLAUDE.md` 后需要重启 Claude Code 才会生效。
+
 ## 4. 工具使用示例（通过 MCP Client 模拟/推理）
 
 ```json
 # win.exec（运行 Get-Date）
 {"name":"win.exec","arguments":{"exe":"powershell.exe","args":["-NoProfile","-Command","Get-Date"]}}
 
+# hdc.list_targets（列出设备）
+{"name":"hdc.list_targets","arguments":{"verbose":true}}
+
 # hdc.run（获取版本）
 {"name":"hdc.run","arguments":{"args":["-v"]}}
 
 # hdc.shell（设备管道）
 {"name":"hdc.shell","arguments":{"connectKey":"ec29...","command":"ls /data/robot/usr/lib | wc -l"}}
+
+# rk3588s.dir_tree（目录结构，需配置 RK3588S_CONNECTKEY）
+{"name":"rk3588s.dir_tree","arguments":{"path":"/","maxDepth":3,"dirsOnly":true}}
 ```
 
 ## 5. 设备级管道/路径注意
